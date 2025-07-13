@@ -1,5 +1,6 @@
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
+from django.core.cache import cache
 from rest_framework import viewsets, generics, status, permissions, filters
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -13,6 +14,31 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Transaction
 from .serializers import TransactionSerializer
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.urls import reverse
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.models import User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.conf import settings
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from .models import Transaction, ForecastResult, CategorizedTransaction, UserProfile
 
@@ -27,6 +53,7 @@ from .filters import TransactionFilter
 from .ml.classifier import classify_text
 from .ml.forecast import get_monthly_expense_forecast
 from .ml.lime_explainer import explain_with_lime
+import random
 
 import csv
 from reportlab.pdfgen import canvas
@@ -34,6 +61,7 @@ import numpy as np
 from lime.lime_text import LimeTextExplainer
 from .ml.classifier import loaded_model, tokenizer, label_encoder
 
+User = get_user_model()
 
 #.................
 from rest_framework.decorators import api_view, permission_classes
@@ -138,18 +166,18 @@ class SummaryAnalyticsView(APIView):
     def get(self, request):
         user = request.user
 
-        # ✅ Use budget from custom user model
+        # Use budget from custom user model
         budget = user.monthly_budget or 0
 
-        # ✅ Filter transactions for the current month only
+        # Filter transactions for the current month only
         now = timezone.now()
         month_start = now.replace(day=1)
         transactions = Transaction.objects.filter(user=user, date__gte=month_start)
 
-        # ✅ Total expenses this month
+        # Total expenses this month
         total_expense = transactions.aggregate(total=Sum('amount'))['total'] or 0
 
-        # ✅ Category-wise breakdown (handle uncategorized)
+        # Category-wise breakdown (handle uncategorized)
         expenses_by_category = transactions.annotate(
             display_category=Coalesce('category', Value('Uncategorized'))
         ).values('display_category').annotate(
@@ -327,7 +355,7 @@ def classify_and_save_transaction(request):
 def forecast_expenses(request):
     try:
         user = request.user
-        forecast = get_monthly_expense_forecast(user)  # ✅ Fixed
+        forecast = get_monthly_expense_forecast(user)  # Fixed
         return Response({"forecast": forecast})
     except Exception as e:
         return Response({"forecast": {"error": str(e)}})
@@ -418,13 +446,13 @@ def redirect_to_api(request):
 from rest_framework.permissions import AllowAny
 
 class RegisterView(APIView):
-    permission_classes = [AllowAny]  # 👈 This overrides global auth
+    permission_classes = [AllowAny]  #  This overrides global auth
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "✅ User registered successfully."}, status=status.HTTP_201_CREATED)
+            return Response({"message": " User registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -436,8 +464,67 @@ def update_budget(request):
     serializer = BudgetUpdateSerializer(user, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        return Response({"message": "✅ Budget updated successfully."})
+        return Response({"message": " Budget updated successfully."})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Legacy alias support
 predict_category = classify_transaction
+
+
+#Email Setting
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_password_reset(request):
+    email = request.data.get("email")
+    try:
+        user = User.objects.get(email=email)
+        token = f"{random.randint(100000, 999999)}"
+        cache.set(f"reset_token_{email}", token, timeout=600)
+
+        # Email the token
+        subject = "Your MoneyTracker Password Reset Token"
+        message = f"""
+Hi {user.username},
+
+Here is your password reset token:
+{token}
+
+Enter this token on the reset page to set a new password.
+
+If you did not request this, you can ignore this message.
+
+– MoneyTracker Support
+"""
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+        return Response({"message": "Password reset email sent."})
+    except User.DoesNotExist:
+        return Response({"error": "User not found with this email"}, status=404)
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    email = request.data.get("email")
+    token = request.data.get("token")
+    new_password = request.data.get("password")
+
+    if not (email and token and new_password):
+        return Response({"error": "All fields are required."}, status=400)
+
+    try:
+        user = User.objects.get(email=email)
+        cached_token = cache.get(f"reset_token_{email}")
+
+        if cached_token == token:
+            user.set_password(new_password)
+            user.save()
+            cache.delete(f"reset_token_{email}")  # Clean up
+            return Response({"message": "Password reset successful."})
+        else:
+            return Response({"error": "Invalid or expired token."}, status=400)
+    except User.DoesNotExist:
+        return Response({"error": "User not found."}, status=404)
+
+
+

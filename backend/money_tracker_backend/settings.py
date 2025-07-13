@@ -120,3 +120,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React (Vite) dev server
 ]
 CORS_ALLOW_CREDENTIALS = True  # Optional, only if using cookies
+
+
+# Email setting 
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Replace with your provider
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'roshansapkota081@gmail.com'
+EMAIL_HOST_PASSWORD = 'quqf crlk chrw qxan'  # Use app password, not your email password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

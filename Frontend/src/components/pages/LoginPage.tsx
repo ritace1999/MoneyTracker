@@ -82,7 +82,7 @@ const LoginPage = () => {
                 </Button>
               </Form.Item>
 
-              <div className="flex justify-center text-sm">
+              <div className="flex justify-between text-sm">
                 <p>
                   Don't have an account?{" "}
                   <span
@@ -91,6 +91,12 @@ const LoginPage = () => {
                   >
                     Sign Up
                   </span>
+                </p>
+                <p
+                  className="text-blue-600 cursor-pointer hover:underline"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  Forgot Password?
                 </p>
               </div>
             </Form>

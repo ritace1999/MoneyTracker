@@ -17,9 +17,9 @@ try:
         tokenizer = pickle.load(f)
     with open(label_encoder_path, 'rb') as f:
         label_encoder = pickle.load(f)
-    print("✅ Model, tokenizer, and label encoder loaded.")
+    print("Model, tokenizer, and label encoder loaded.")
 except Exception as e:
-    print("❌ Error loading model or tokenizer:", e)
+    print("Error loading model or tokenizer:", e)
     loaded_model = None
     tokenizer = None
     label_encoder = None
