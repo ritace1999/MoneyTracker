@@ -33,3 +33,4 @@ def classify_text(text):
     prediction = loaded_model.predict(padded)
     predicted_label = label_encoder.inverse_transform([np.argmax(prediction)])
     return predicted_label[0]
+

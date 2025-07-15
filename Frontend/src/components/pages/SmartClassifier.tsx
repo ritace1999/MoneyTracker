@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { message } from "antd";
+import { Alert, message, Spin } from "antd";
 
 const SmartClassifier: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   const [description, setDescription] = useState("");
   const [predictedCategory, setPredictedCategory] = useState("");
@@ -75,12 +76,14 @@ const SmartClassifier: React.FC = () => {
       type: "info",
       content: "please wait!",
     });
+    setLoading(true);
     try {
       const res = await axios.get("http://127.0.0.1:8000/api/xai/html/", {
         headers,
         params: { text: description },
       });
       setHtmlExplanation(res.data);
+      setLoading(false);
     } catch (err) {
       console.error("HTML explanation error", err);
     }
@@ -89,72 +92,87 @@ const SmartClassifier: React.FC = () => {
   return (
     <>
       {contextHolder}
-      <div className="p-8 bg-[#f4f5f7] min-h-full">
-        <h1 className="text-3xl font-semibold mb-6 text-[#1a1a2e]">
-          Smart Classification
-        </h1>
 
-        <input
-          type="text"
-          placeholder="Enter transaction description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="border p-2 w-full mb-4"
-        />
-
-        <div className="flex gap-2 justify-center mb-6">
-          <button
-            onClick={classify}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
-          >
-            Predict Category
-          </button>
-          <button
-            onClick={explainWithLime}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
-          >
-            Explain with LIME
-          </button>
-          <button
-            onClick={fetchHtmlExplanation}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
-          >
-            View HTML Explanation
-          </button>
-        </div>
-
-        {predictedCategory && (
-          <div className="mb-6">
-            <p className="text-lg">
-              🏷️ Predicted Category: <strong>{predictedCategory}</strong>
-            </p>
+      {loading ? (
+        <>
+          <div className="p-8 bg-[#f4f5f7] flex justify-center items-center h-[100vh]">
+            <div>
+              <Spin spinning={loading} size="large" delay={500}></Spin>
+            </div>
           </div>
-        )}
+        </>
+      ) : (
+        <>
+          {" "}
+          <div className="p-8 bg-[#f4f5f7] h-[100vh]">
+            <h1 className="text-3xl font-semibold mb-6 text-[#1a1a2e]">
+              Smart Classification
+            </h1>
 
-        {limeExplanation.length > 0 && (
-          <div className="mb-6">
-            <h2 className="font-bold">LIME Explanation:</h2>
-            <ul className="list-disc pl-5">
-              {limeExplanation.map(([feature, weight], index) => (
-                <li key={index}>
-                  <strong>{feature}</strong>: {parseFloat(weight).toFixed(4)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {htmlExplanation && (
-          <div className="mb-6">
-            <h2 className="font-bold mb-2">HTML Explanation (LIME):</h2>
-            <iframe
-              srcDoc={htmlExplanation}
-              title="LIME Explanation"
-              className="w-full h-[500px] border"
+            <input
+              type="text"
+              placeholder="Enter transaction description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="border p-2 w-full mb-4"
             />
+
+            <div className="flex gap-2 justify-center mb-6">
+              <button
+                onClick={classify}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
+              >
+                Predict Category
+              </button>
+              <button
+                onClick={explainWithLime}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
+              >
+                Explain with LIME
+              </button>
+              <button
+                onClick={fetchHtmlExplanation}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105  cursor-pointer"
+              >
+                View HTML Explanation
+              </button>
+            </div>
+
+            {predictedCategory && (
+              <div className="mb-6">
+                <p className="text-lg">
+                  🏷️ Predicted Category: <strong>{predictedCategory}</strong>
+                </p>
+              </div>
+            )}
+
+            {limeExplanation.length > 0 && (
+              <div className="mb-6">
+                <h2 className="font-bold">LIME Explanation:</h2>
+                <ul className="list-disc pl-5">
+                  {limeExplanation.map(([feature, weight], index) => (
+                    <li key={index}>
+                      <strong>{feature}</strong>:{" "}
+                      {parseFloat(weight).toFixed(4)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {htmlExplanation && (
+              <div className="mb-6">
+                <h2 className="font-bold mb-2">HTML Explanation (LIME):</h2>
+                <iframe
+                  srcDoc={htmlExplanation}
+                  title="LIME Explanation"
+                  className="w-full h-[500px] border"
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </>
   );
 };

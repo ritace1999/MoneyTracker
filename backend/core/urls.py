@@ -10,6 +10,7 @@ from .views import budget_alert_view
 from .views import update_budget
 from django.urls import path
 from .views import request_password_reset, reset_password
+from .views import login_with_email_or_username
 
 router = routers.DefaultRouter()
 router.register(r'transactions', views.TransactionViewSet)
@@ -35,5 +36,6 @@ urlpatterns = [
     path('budget/update/', update_budget, name='update-budget'),
     path("password-reset/", request_password_reset),
     path("password-reset-confirm/", reset_password),
+    path('login/', login_with_email_or_username, name='custom-login'),
 
 ]

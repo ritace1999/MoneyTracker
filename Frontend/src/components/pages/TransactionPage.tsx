@@ -13,6 +13,7 @@ interface Transaction {
 const TransactionPage: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [searchCategory, setSearchCategory] = useState("");
   const [form, setForm] = useState({
     description: "",
     amount: "",
@@ -27,10 +28,7 @@ const TransactionPage: React.FC = () => {
   };
 
   const showDeleteMessage = () => {
-    messageApi.open({
-      type: "success",
-      content: "Delete successful!",
-    });
+    messageApi.open({ type: "success", content: "Delete successful!" });
   };
 
   const fetchTransactions = async () => {
@@ -61,12 +59,12 @@ const TransactionPage: React.FC = () => {
           form,
           { headers }
         );
-        messageApi.open({ type: "success", content: "Update successful!" });
+        messageApi.success("Update successful!");
       } else {
         await axios.post("http://127.0.0.1:8000/api/transactions/", form, {
           headers,
         });
-        messageApi.open({ type: "success", content: "Add successful!" });
+        messageApi.success("Add successful!");
       }
 
       setForm({
@@ -108,6 +106,10 @@ const TransactionPage: React.FC = () => {
     fetchTransactions();
   }, []);
 
+  const filteredTransactions = transactions.filter((txn) =>
+    txn.category?.toLowerCase().includes(searchCategory.toLowerCase())
+  );
+
   return (
     <>
       {contextHolder}
@@ -130,7 +132,7 @@ const TransactionPage: React.FC = () => {
           />
           <input
             type="number"
-            placeholder="Amount"
+            placeholder="Amount $"
             className="border p-2"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
@@ -142,13 +144,13 @@ const TransactionPage: React.FC = () => {
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
           />
-          <input
+          {/* <input
             type="text"
             placeholder="Category (optional)"
             className="border p-2"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
-          />
+          /> */}
           <button className="bg-blue-600 cursor-pointer hover:text-amber-100 hover:scale-105 text-white px-4 py-2 rounded col-span-full">
             {editingId ? "Update Transaction" : "Add Transaction"}
           </button>
@@ -165,12 +167,23 @@ const TransactionPage: React.FC = () => {
                   category: "",
                 });
               }}
-              className="text-md text-red-700 cursor-pointer hover:scale-105 underline col-span-full"
+              className="text-md text-red-700  cursor-pointer hover:scale-105 underline col-span-full"
             >
               Cancel Edit
             </button>
           )}
         </form>
+
+        {/* Search by Category */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search transaction by category..."
+            className="border p-2 w-full sm:w-[300px]"
+            value={searchCategory}
+            onChange={(e) => setSearchCategory(e.target.value)}
+          />
+        </div>
 
         <table className="w-full border text-sm">
           <thead>
@@ -183,37 +196,38 @@ const TransactionPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {transactions.length === 0 && (
+            {filteredTransactions.length === 0 ? (
               <tr>
                 <td colSpan={5} className="p-4 text-center text-gray-500">
                   No transactions found.
                 </td>
               </tr>
+            ) : (
+              filteredTransactions.map((txn) => (
+                <tr key={txn.id} className="border-t">
+                  <td className="p-2 border">{txn.description}</td>
+                  <td className="p-2 border">${txn.amount.toFixed(2)}</td>
+                  <td className="p-2 border">{txn.date}</td>
+                  <td className="p-2 border">
+                    {txn.category || "Uncategorized"}
+                  </td>
+                  <td className="p-2 border text-center">
+                    <button
+                      onClick={() => startEdit(txn)}
+                      className="bg-yellow-400 px-3 py-1 rounded mr-2 cursor-pointer hover:scale-105"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(txn.id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:scale-105 cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
-            {transactions.map((txn) => (
-              <tr key={txn.id} className="border-t">
-                <td className="p-2 border">{txn.description}</td>
-                <td className="p-2 border">${txn.amount.toFixed(2)}</td>
-                <td className="p-2 border">{txn.date}</td>
-                <td className="p-2 border">
-                  {txn.category || "Uncategorized"}
-                </td>
-                <td className="p-2 border text-center">
-                  <button
-                    onClick={() => startEdit(txn)}
-                    className="bg-yellow-400 px-3 py-1 rounded mr-2 cursor-pointer hover:scale-105"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(txn.id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:scale-105 cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>

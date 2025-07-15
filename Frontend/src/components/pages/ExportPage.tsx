@@ -67,7 +67,7 @@ const ExportPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 bg-[#f4f5f7] min-h-full">
+    <div className="p-8 bg-[#f4f5f7] h-[100vh]">
       {contextHolder}
       <h1 className="text-3xl font-semibold mb-6 text-[#1a1a2e]">
         Export Transaction
@@ -94,7 +94,7 @@ const ExportPage: React.FC = () => {
             className="w-full border p-2"
           />
         </div>
-        <div className="sm:col-span-2">
+        {/* <div className="sm:col-span-2">
           <label className="block mb-1">Category (optional)</label>
           <input
             type="text"
@@ -104,7 +104,7 @@ const ExportPage: React.FC = () => {
             placeholder="e.g. food, bills"
             className="w-full border p-2"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="flex gap-4 justify-center">

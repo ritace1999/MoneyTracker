@@ -46,10 +46,11 @@ const DashboardPage: React.FC = () => {
 
   const fetchMonthlyStats = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/monthly-stats/", {
+      const res = await axios.get("http://127.0.0.1:8000/api/monthly/stats/", {
         headers: { Authorization: `Token ${token}` },
       });
-      setMonthlyStats(res.data);
+      console.log(res.data);
+      setMonthlyStats(res.data.monthly_stats);
     } catch (err) {
       message.error(" Failed to load monthly trends");
     }
@@ -63,7 +64,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 bg-[#f4f5f7] min-h-full">
+    <div className="p-8 bg-[#f4f5f7] h-[100vh]">
       <h1 className="text-3xl font-semibold mb-6 text-[#1a1a2e]">
         Dashboard Overview
       </h1>

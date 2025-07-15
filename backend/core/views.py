@@ -1,4 +1,12 @@
 from django.http import HttpResponseRedirect, HttpResponse
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 from django.core.cache import cache
 from rest_framework import viewsets, generics, status, permissions, filters
@@ -527,4 +535,25 @@ def reset_password(request):
         return Response({"error": "User not found."}, status=404)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_with_email_or_username(request):
+    identifier = request.data.get('username')
+    password = request.data.get('password')
 
+    if not identifier or not password:
+        return Response({'error': 'Both fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Try to find user by username or email
+    try:
+        user = User.objects.get(Q(username=identifier) | Q(email=identifier))
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Authenticate using username (required by Django's authenticate)
+    user = authenticate(username=user.username, password=password)
+    if user:
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key})
+    else:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)

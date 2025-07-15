@@ -14,7 +14,7 @@ const LoginPage = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/token/",
+        "http://127.0.0.1:8000/api/login/",
         values
       );
       localStorage.setItem("access", response.data.token);
@@ -57,13 +57,16 @@ const LoginPage = () => {
               autoComplete="off"
             >
               <Form.Item
-                label="Username"
+                label="Username or Email"
                 name="username"
                 rules={[
-                  { required: true, message: "Please enter your username" },
+                  {
+                    required: true,
+                    message: "Please enter your username or email",
+                  },
                 ]}
               >
-                <Input placeholder="Enter username" />
+                <Input placeholder="Enter your username or email" />
               </Form.Item>
 
               <Form.Item
@@ -82,7 +85,7 @@ const LoginPage = () => {
                 </Button>
               </Form.Item>
 
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-center text-sm">
                 <p>
                   Don't have an account?{" "}
                   <span
@@ -92,8 +95,10 @@ const LoginPage = () => {
                     Sign Up
                   </span>
                 </p>
+              </div>
+              <div className="flex justify-center pt-2 underline decoration-red-500">
                 <p
-                  className="text-blue-600 cursor-pointer hover:underline"
+                  className="text-red-600 cursor-pointer hover:underline"
                   onClick={() => navigate("/forgot-password")}
                 >
                   Forgot Password?

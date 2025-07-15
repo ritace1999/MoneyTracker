@@ -44,17 +44,23 @@ const ForecastPage: React.FC = () => {
           headers,
         });
 
-        if (res.data.forecast?.error) {
-          setError(res.data.forecast.error);
+        const forecast = res.data.forecast;
+        console.log("Forecast API response:", forecast);
+
+        if (forecast?.error) {
+          setError(forecast.error);
           setForecastData([]);
-        } else if (Array.isArray(res.data.forecast)) {
-          setForecastData(res.data.forecast);
+        } else if (Array.isArray(forecast)) {
+          setForecastData(forecast);
+          setError("");
         } else {
           setError("Unexpected forecast format.");
+          setForecastData([]);
         }
       } catch (err) {
         console.error("Forecast error", err);
         setError("Failed to load forecast. Please try again later.");
+        setForecastData([]);
       }
     };
 
@@ -65,9 +71,11 @@ const ForecastPage: React.FC = () => {
     labels: forecastData.map((item) => item.month),
     datasets: [
       {
-        label: "Forecasted Expense (in £)",
+        label: "Forecasted Expense (in $)",
         data: forecastData.map((item) => item.forecasted_expense),
         fill: false,
+        borderColor: "#1890ff",
+        backgroundColor: "rgba(24, 144, 255, 0.2)",
         tension: 0.3,
       },
     ],
@@ -85,7 +93,7 @@ const ForecastPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 bg-[#f4f5f7] min-h-full">
+    <div className="p-8 bg-[#f4f5f7] h-[100vh]">
       <h1 className="text-3xl font-semibold mb-6 text-[#1a1a2e]">Forecast</h1>
 
       {error && (

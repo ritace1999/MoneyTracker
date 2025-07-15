@@ -143,7 +143,7 @@ const BudgetManagementPage: React.FC = () => {
           type="number"
           value={newBudget}
           onChange={(e) => setNewBudget(e.target.value)}
-          placeholder="Update Monthly Budget ($)"
+          placeholder="Update Budget ($)"
           className="border px-3 py-2 rounded w-full"
         />
         <button
