@@ -79,8 +79,7 @@ from rest_framework import status
 
 from .serializers import BudgetUpdateSerializer
 
-# 1. DRF Views
-
+# Views
 class TransactionListCreateView(generics.ListCreateAPIView):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -97,18 +96,16 @@ class TransactionListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
         try:
-            predicted_category = classify_text(instance.description)
-            instance.category = predicted_category
-            instance.save()
+            if not instance.category:
+                instance.category = classify_text(instance.description)
+                instance.save()
             CategorizedTransaction.objects.create(
                 transaction=instance,
                 user=self.request.user,
-                predicted_category=predicted_category
+                predicted_category=instance.category
             )
         except Exception as e:
             print(f"[ERROR] Classification failed: {e}")
-
-
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
@@ -121,13 +118,13 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(user=self.request.user)
         try:
-            predicted_category = classify_text(instance.description)
-            instance.category = predicted_category
-            instance.save()
+            if not instance.category:
+                instance.category = classify_text(instance.description)
+                instance.save()
             CategorizedTransaction.objects.create(
                 transaction=instance,
                 user=self.request.user,
-                predicted_category=predicted_category
+                predicted_category=instance.category
             )
         except Exception as e:
             print(f"[ERROR] Classification failed: {e}")
@@ -135,21 +132,20 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.save(user=self.request.user)
         try:
-            new_category = classify_text(instance.description)
-        except Exception:
-            new_category = 'Uncategorized'
+            new_category = classify_text(instance.description) if not instance.category else instance.category
+            instance.category = new_category
+            instance.save()
+            CategorizedTransaction.objects.update_or_create(
+                transaction=instance,
+                defaults={
+                    'user': self.request.user,
+                    'predicted_category': new_category,
+                    'confidence': None
+                }
+            )
+        except Exception as e:
+            print(f"[ERROR] Classification failed during update: {e}")
 
-        instance.category = new_category
-        instance.save()
-
-        CategorizedTransaction.objects.update_or_create(
-            transaction=instance,
-            defaults={
-                'user': self.request.user,
-                'predicted_category': new_category,
-                'confidence': None
-            }
-        )
 
 
 class ForecastResultViewSet(viewsets.ModelViewSet):

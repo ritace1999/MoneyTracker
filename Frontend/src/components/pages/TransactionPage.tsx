@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { message } from "antd";
 
@@ -21,6 +21,8 @@ const TransactionPage: React.FC = () => {
     category: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null); // ← Form reference
+
   const token = localStorage.getItem("access");
 
   const headers = {
@@ -100,6 +102,10 @@ const TransactionPage: React.FC = () => {
       date: txn.date,
       category: txn.category || "",
     });
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   useEffect(() => {
@@ -119,6 +125,7 @@ const TransactionPage: React.FC = () => {
         </h1>
 
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"
         >
@@ -144,13 +151,25 @@ const TransactionPage: React.FC = () => {
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
           />
-          {/* <input
-            type="text"
-            placeholder="Category (optional)"
+          <select
             className="border p-2"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
-          /> */}
+          >
+            <option value="" disabled>
+              Select category (Optional)
+            </option>
+            <option value="food">Food</option>
+            <option value="transport">Transport</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="health">Health</option>
+            <option value="utilities">Utilities</option>
+            <option value="technology">Technology</option>
+            <option value="clothing">Clothing</option>
+            <option value="education">Education</option>
+            <option value="other">Other</option>
+          </select>
+
           <button className="bg-blue-600 cursor-pointer hover:text-amber-100 hover:scale-105 text-white px-4 py-2 rounded col-span-full">
             {editingId ? "Update Transaction" : "Add Transaction"}
           </button>
@@ -167,14 +186,13 @@ const TransactionPage: React.FC = () => {
                   category: "",
                 });
               }}
-              className="text-md text-red-700  cursor-pointer hover:scale-105 underline col-span-full"
+              className="text-md text-red-700 cursor-pointer hover:scale-105 underline col-span-full"
             >
               Cancel Edit
             </button>
           )}
         </form>
 
-        {/* Search by Category */}
         <div className="mb-4">
           <input
             type="text"
