@@ -21,10 +21,9 @@ const TransactionPage: React.FC = () => {
     category: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null); // ← Form reference
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const token = localStorage.getItem("access");
-
   const headers = {
     Authorization: `Token ${token}`,
   };
@@ -52,6 +51,24 @@ const TransactionPage: React.FC = () => {
     }
   };
 
+  const checkBudgetStatus = async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/api/budget/alert/", {
+        headers,
+      });
+      const data = res.data;
+      console.log(data);
+      if (data.status === "Over Budget") {
+        messageApi.open({
+          type: "error",
+          content: ` Budget exceeded! You’ve spent $${data.spent} out of $${data.budget}.`,
+        });
+      }
+    } catch (err: any) {
+      console.error("Budget check failed:", err.response || err.message || err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -68,6 +85,8 @@ const TransactionPage: React.FC = () => {
         });
         messageApi.success("Add successful!");
       }
+
+      await checkBudgetStatus();
 
       setForm({
         description: "",
@@ -102,7 +121,6 @@ const TransactionPage: React.FC = () => {
       date: txn.date,
       category: txn.category || "",
     });
-
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);

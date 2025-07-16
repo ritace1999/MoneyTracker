@@ -171,7 +171,12 @@ class SummaryAnalyticsView(APIView):
         user = request.user
 
         # Use budget from custom user model
-        budget = user.monthly_budget or 0
+        try:
+            profile = UserProfile.objects.get(user=user)
+            budget = float(profile.monthly_budget or 0)
+        except UserProfile.DoesNotExist:
+            budget = 0
+
 
         # Filter transactions for the current month only
         now = timezone.now()
@@ -409,12 +414,17 @@ from calendar import monthrange
 from rest_framework.decorators import api_view
 from django.db.models import Sum
 
+
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def budget_alert_view(request):
     user = request.user
-    budget = user.monthly_budget or 0
+    try:
+        profile = UserProfile.objects.get(user=user)
+        budget = float(profile.monthly_budget or 0)  
+    except UserProfile.DoesNotExist:
+        return Response({"error": "User profile not found."}, status=404)
 
     today = date.today()
     start_of_month = today.replace(day=1)
@@ -425,6 +435,8 @@ def budget_alert_view(request):
         date__gte=start_of_month,
         date__lte=end_of_month
     ).aggregate(total=Sum('amount'))['total'] or 0
+
+    monthly_expense = float(monthly_expense)  # ✅ Ensure float type
 
     if monthly_expense > budget:
         return Response({
@@ -465,11 +477,18 @@ class RegisterView(APIView):
 @permission_classes([IsAuthenticated])
 def update_budget(request):
     user = request.user
-    serializer = BudgetUpdateSerializer(user, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": " Budget updated successfully."})
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        new_budget = request.data.get("monthly_budget")
+        if new_budget is not None:
+            profile.monthly_budget = new_budget
+            profile.save()
+            return Response({"message": "Budget updated successfully."})
+        else:
+            return Response({"error": "monthly_budget is required."}, status=400)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
 
 # Legacy alias support
 predict_category = classify_transaction

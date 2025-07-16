@@ -19,10 +19,10 @@ const ResetPasswordPage = () => {
           password: values.password,
         }
       );
-      messageApi.success("✅ Password reset successful!");
+      messageApi.success("Password reset successful!");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err: any) {
-      messageApi.error("❌ Reset failed. Invalid token or email.");
+      messageApi.error("Reset failed. Invalid token or email.");
     } finally {
       setLoading(false);
     }
